@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Velox TV</title>
-<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.2 -->
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.4 -->
 <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
@@ -31,14 +31,53 @@
   #vx-sig .s { color: #aab2c0; font-size: 14px; margin-top: 2px; }
   #vx-sig .c { color: #fff; font-size: 14px; margin-top: 6px; }
   #vx-sig .c b { color: #00a8ff; }
+  /* v2.4 · canales: barra de zapping como en la tablet (logo, programa, horas, linea de progreso, canal) */
+  #vx-zap { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2147483645; display: flex; align-items: flex-end; gap: 26px;
+    padding: 70px 4vw 4.5vh; background: linear-gradient(to top, rgba(0,0,0,.9) 0%, rgba(0,0,0,.7) 55%, rgba(0,0,0,0) 100%);
+    color: #fff; font-family: Roboto, sans-serif; opacity: 0; transform: translateY(16px); transition: opacity .35s, transform .35s; pointer-events: none; }
+  #vx-zap.ver { opacity: 1; transform: none; }
+  #vx-zap .lg { width: 132px; height: 88px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 2px 8px rgba(0,0,0,.6)); }
+  #vx-zap .lg[src=""] { visibility: hidden; }
+  #vx-zap .cu { flex: 1; min-width: 0; }
+  #vx-zap .ti { font-size: 25px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #vx-zap .fi { display: flex; align-items: center; gap: 14px; margin-top: 8px; color: #d0d4dc; font-size: 16px; white-space: nowrap; }
+  #vx-zap .pr { width: 96px; height: 3px; background: rgba(255,255,255,.25); flex-shrink: 0; }
+  #vx-zap .pr > div { height: 100%; background: #fff; }
+  #vx-zap .nu { color: #fff; font-weight: 700; }
+  #vx-zap .bd { border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 1px 6px; font-size: 12px; color: #ccc; background: rgba(255,255,255,.08); }
+  #vx-zap .si { margin-top: 8px; color: #aab0bb; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #vx-zap .vacio { display: none; }
+  /* v2.4 · peliculas y capitulos: pantalla de espera con la caratula y el titulo */
+  #vx-carga { position: fixed; inset: 0; z-index: 2147483644; display: flex; align-items: center; gap: 4.5vw; padding: 0 7vw;
+    background: #07080c; color: #fff; font-family: Roboto, sans-serif; opacity: 0; transition: opacity .5s; pointer-events: none; overflow: hidden; }
+  #vx-carga.ver { opacity: 1; }
+  #vx-carga .fo { position: absolute; inset: -40px; background: center / cover no-repeat; filter: blur(34px) brightness(.32) saturate(1.2); }
+  #vx-carga .ca { position: relative; max-height: 54vh; max-width: 36vw; border-radius: 12px; box-shadow: 0 16px 50px rgba(0,0,0,.7); flex-shrink: 0; }
+  #vx-carga .ca[src=""] { display: none; }
+  #vx-carga .tx { position: relative; min-width: 0; }
+  #vx-carga .q { color: #00a8ff; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  #vx-carga .n { font-size: 36px; font-weight: 700; line-height: 1.15; margin-top: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #vx-carga .s { color: #b8c0cc; font-size: 19px; margin-top: 10px; }
+  #vx-carga .es { display: flex; align-items: center; gap: 12px; margin-top: 28px; color: #8a92a0; font-size: 16px; }
+  #vx-carga .es i { width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(255,255,255,.18); border-top-color: #00a8ff; animation: vxgira .9s linear infinite; }
+  @keyframes vxgira { to { transform: rotate(360deg); } }
+  /* v2.4 · al pausar: titulo pequeño arriba (la barra de tiempo es la de Google) */
+  #vx-pausa { position: fixed; left: 4vw; top: 5vh; z-index: 2147483643; max-width: 60vw; color: #fff; font-family: Roboto, sans-serif;
+    text-shadow: 0 2px 10px rgba(0,0,0,.8); opacity: 0; transition: opacity .35s; pointer-events: none; }
+  #vx-pausa.ver { opacity: 1; }
+  #vx-pausa .n { font-size: 24px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #vx-pausa .s { color: #d0d4dc; font-size: 16px; margin-top: 4px; }
 </style>
 </head>
 <body>
 <cast-media-player></cast-media-player>
 <div id="vx-crono"></div>
+<div id="vx-carga"><div class="fo"></div><img class="ca" src="" alt=""><div class="tx"><div class="q">Velox TV</div><div class="n"></div><div class="s"></div><div class="es"><i></i><span>Cargando…</span></div></div></div>
+<div id="vx-zap"><img class="lg" src="" alt=""><div class="cu"><div class="ti"></div><div class="fi"></div><div class="si"></div></div></div>
+<div id="vx-pausa"><div class="n"></div><div class="s"></div></div>
 <div id="vx-sig"><img src="" alt=""><div><div class="q">Siguiente capítulo</div><div class="n"></div><div class="s"></div><div class="c"></div></div></div>
 <script>
-window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.2 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
+window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.4 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
 (function(){
   var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
   var context = cast.framework.CastReceiverContext.getInstance();
@@ -71,7 +110,9 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
   // ── cronometro: de "cargar" a la primera imagen; se ve en la tele unos segundos y se lo cuenta a la APK ──
   var t0 = 0, titulo = '', crono = document.getElementById('vx-crono'), ocultar = null;
   function avisar(o){ try { context.sendCustomMessage(NS, undefined, o); } catch (e) {} }
+  var TIEMPOS = false;   // v2.4: los tiempos ya no salen en la tele (siguen yendo al log de la APK); la APK puede pedirlos con customData.tiempos
   function enPantalla(txt, sub){
+    if (!TIEMPOS && txt.charAt(0) !== '⚠') return;
     try {
       crono.innerHTML = txt + (sub ? '<small>' + sub + '</small>' : '');
       crono.classList.add('ver'); clearTimeout(ocultar);
@@ -80,7 +121,7 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
   }
   function empieza(req){
     t0 = Date.now();
-    try { var m = (req && (req.media || (req.items && req.items[0] && req.items[0].media))) || null; titulo = (m && m.metadata && m.metadata.title) || ''; } catch (e) { titulo = ''; }
+    try { var m = (req && (req.media || (req.items && req.items[0] && req.items[0].media))) || null; titulo = (m && m.metadata && m.metadata.title) || ''; vxNuevo(m); } catch (e) { titulo = ''; }
   }
   pm.setMessageInterceptor(cast.framework.messages.MessageType.LOAD, function(req){ empieza(req); return req; });
   if (cast.framework.messages.MessageType.QUEUE_LOAD)
@@ -103,7 +144,7 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
     enPantalla('⚠ Error ' + ((e && e.detailedErrorCode) || ''), 'Velox');
   });
   try {
-    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '2.2' }); }, 500); });
+    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '2.4' }); }, 500); });
   } catch (e) {}
 
 
@@ -185,10 +226,110 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
       for (var k = 0; k < out.length; k += 25) avisar({ t: 'dom', parte: k / 25, l: out.slice(k, k + 25) });
     } catch (e) { avisar({ t: 'dom', error: String(e) }); }
   }
-  pm.addEventListener(T.PLAYING, function(){ setTimeout(volcar, 1200); });
+  // (v2.3: la radiografia ya no se manda; la funcion volcar() queda para otra vez)
+
+
+  // ── v2.3: dentro del reproductor de Google (cast-media-player → tv-overlay) se esconden su titulo grande del principio
+  //    (.overlay .metadata) y su "Up next" (.nextOverlay): quedan la barra de tiempo de Google y lo nuestro ──
+  function estilosGoogle(){
+    try {
+      var p = document.querySelector('cast-media-player'), r = p && p.shadowRoot; if (!r) return false;
+      var tv = r.querySelector('tv-overlay'), r2 = tv && tv.shadowRoot; if (!r2) return false;
+      if (r2.querySelector('#vx-st2')) return true;
+      var st = document.createElement('style'); st.id = 'vx-st2';
+      st.textContent = '.overlay .metadata{display:none!important}.nextOverlay{display:none!important}';
+      r2.appendChild(st);
+      avisar({ t: 'google', escondido: 'titulo y up next' });
+      return true;
+    } catch (e) { return false; }
+  }
+  (function insistir(n){ if (!estilosGoogle() && n < 40) setTimeout(function(){ insistir(n + 1); }, 500); })(0);
+  pm.addEventListener(T.PLAYER_LOAD_COMPLETE, estilosGoogle);
+  pm.addEventListener(T.PLAYING, estilosGoogle);
+
+  // ── v2.4: lo que se ve en la tele, como los profesionales ──
+  //   canales: barra de zapping ~4 s · peliculas/capitulos: espera con caratula y titulo, luego imagen limpia · pausa: titulo pequeño
+  var zap = document.getElementById('vx-zap'), carga = document.getElementById('vx-carga'), pausa = document.getElementById('vx-pausa');
+  var info = null, tZap = null, tCarga = null, toca = false;   // toca: la barra sale al verse (tras cambiar o pausar), no tras un parón de red
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function hora(ms){ var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function datos(m){
+    var md = (m && m.metadata) || {}, cd = (m && m.customData) || {}, im = (md.images && md.images[0] && md.images[0].url) || '';
+    return { titulo: md.title || '', sub: md.subtitle || '', img: cd.logo || im, live: !!(m && m.streamType === 'LIVE') || cd.tipo === 'live', cd: cd };
+  }
+  function calidad(){
+    try {
+      var p = document.querySelector('cast-media-player'), v = p && p.shadowRoot && p.shadowRoot.querySelector('video');
+      var h = v && v.videoHeight; if (!h) return '';
+      return '<span class="bd">' + (h >= 2160 ? 'UHD' : h >= 1080 ? 'FHD' : h >= 720 ? 'HD' : 'SD') + '</span>';
+    } catch (e) { return ''; }
+  }
+  function pintarZap(){
+    if (!info) return;
+    var cd = info.cd, ahora = Date.now(), ini = +cd.ini || 0, fin = +cd.fin || 0, hayProg = !!(cd.prog && fin > ini);
+    zap.querySelector('.lg').setAttribute('src', info.img || '');
+    zap.querySelector('.ti').textContent = hayProg ? cd.prog : (info.titulo || '');
+    var f = '';
+    if (hayProg && ahora < fin) {
+      var pct = Math.max(0, Math.min(100, (ahora - ini) / (fin - ini) * 100)), resta = Math.max(0, Math.round((fin - ahora) / 60000));
+      f += '<span>' + hora(ini) + ' — ' + hora(fin) + '</span><span class="pr"><div style="width:' + pct.toFixed(0) + '%"></div></span><span>' + resta + ' min</span>';
+    } else if (!hayProg && info.sub && info.sub !== 'En directo') f += '<span>' + esc(info.sub) + '</span>';
+    f += '<span class="nu">' + (cd.num ? cd.num + '&nbsp;&nbsp;' : '') + esc(cd.canal || info.titulo || '') + '</span>' + calidad();
+    zap.querySelector('.fi').innerHTML = f;
+    var s = zap.querySelector('.si'), sg = cd.sig;
+    if (sg && sg.t && +sg.ini >= ahora - 60000) { s.textContent = hora(+sg.ini) + ' — ' + hora(+sg.fin) + '    ' + sg.t; s.classList.remove('vacio'); }
+    else { s.textContent = ''; s.classList.add('vacio'); }
+  }
+  function verZap(ms){
+    pintarZap(); zap.classList.add('ver'); clearTimeout(tZap);
+    if (ms) tZap = setTimeout(function(){ zap.classList.remove('ver'); }, ms);
+  }
+  function quitarZap(){ clearTimeout(tZap); zap.classList.remove('ver'); }
+  function verCarga(){
+    carga.querySelector('.fo').style.backgroundImage = info.img ? 'url("' + info.img.replace(/"/g, '%22') + '")' : 'none';
+    carga.querySelector('.ca').setAttribute('src', info.img || '');
+    carga.querySelector('.q').textContent = info.cd.tipo === 'grab' ? 'Grabación' : (/\b(T\d|E\d|S\d|temporada|cap[ií]tulo|episodio)/i.test(info.sub) ? 'Capítulo' : 'Película');
+    carga.querySelector('.n').textContent = info.titulo || '';
+    carga.querySelector('.s').textContent = info.sub || '';
+    carga.classList.add('ver'); clearTimeout(tCarga);
+    tCarga = setTimeout(quitarCarga, 30000);   // por si nunca arranca
+  }
+  function quitarCarga(){ clearTimeout(tCarga); carga.classList.remove('ver'); }
+  function vxNuevo(m){   // llamado al llegar un LOAD (desde la tablet)
+    try {
+      info = datos(m);
+      if (info.cd.tiempos) TIEMPOS = true;
+      pausa.classList.remove('ver'); toca = true;
+      if (info.live) { quitarCarga(); verZap(15000); }   // sale ya al cambiar; al verse, 4 s mas
+      else { quitarZap(); verCarga(); }
+    } catch (e) {}
+  }
+  function alSonar(){
+    pausa.classList.remove('ver');
+    if (carga.classList.contains('ver')) quitarCarga();
+    if (info && info.live && toca) verZap(4000);
+    toca = false;
+  }
+  pm.addEventListener(T.PLAYING, alSonar);
+  pm.addEventListener(T.ERROR, function(){ quitarCarga(); });
+  pm.addEventListener(T.MEDIA_FINISHED, function(){ quitarCarga(); pausa.classList.remove('ver'); });
+  pm.addEventListener(T.PAUSE, function(){
+    try {
+      if (!info) info = datos(pm.getMediaInformation());
+      toca = true;
+      if (info.live) { verZap(0); return; }   // canal en pausa: la barra se queda hasta que siga
+      var mi = pm.getMediaInformation(), d = mi ? datos(mi) : info;   // (con la cola, el capitulo que suena)
+      pausa.querySelector('.n').textContent = d.titulo || '';
+      pausa.querySelector('.s').textContent = d.sub || '';
+      pausa.classList.add('ver');
+    } catch (e) {}
+  });
+  pm.addEventListener(T.LOAD_START, function(){   // siguiente capitulo de la cola: los datos del nuevo
+    try { var mi = pm.getMediaInformation(); if (mi) info = datos(mi); } catch (e) {}
+  });
 
   context.start(opts);
-  enPantalla('Velox TV', 'receptor v2.2 listo');   // al abrirse: confirma que la tele usa NUESTRO receptor
+  if (TIEMPOS) enPantalla('Velox TV', 'receptor v2.4 listo');   // al abrirse (solo con los tiempos en pantalla)
 })();
 </script>
 </body>
