@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Velox TV</title>
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v1 -->
+<script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  cast-media-player {
+    --theme-hue: 200;
+    --progress-color: #00a8ff;
+    --splash-image: none;
+    --logo-image: none;
+    --font-family: "Google Sans", Roboto, sans-serif;
+  }
+</style>
+</head>
+<body>
+<cast-media-player></cast-media-player>
+<script>
+(function(){
+  var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
+  var context = cast.framework.CastReceiverContext.getInstance();
+  var pm = context.getPlayerManager();
+  var T = cast.framework.events.EventType;
+
+  // ── ajustes de reproduccion: arrancar rapido ──
+  var pc = new cast.framework.PlaybackConfig();
+  pc.autoResumeDuration = 1;            // tras un parón, sigue en cuanto hay 1 s (por defecto mas)
+  pc.autoResumeNumberOfSegments = 1;
+  pc.initialBandwidth = 8000000;        // como ExoPlayer: empieza en calidad alta (8 Mbps), sin escalar desde abajo
+  pc.segmentRequestRetryLimit = 4;
+  try {
+    pc.shakaConfig = {
+      manifest: { dash: { ignoreMinBufferTime: true } },          // no esperar el "minBufferTime" del manifiesto
+      streaming: { rebufferingGoal: 1.5, bufferingGoal: 30, retryParameters: { maxAttempts: 4, baseDelay: 300, backoffFactor: 1.5 } },
+      abr: { defaultBandwidthEstimate: 8000000 },
+      preferredAudioLanguage: 'es', preferredTextLanguage: 'es'
+    };
+  } catch (e) {}
+
+  var opts = new cast.framework.CastReceiverOptions();
+  opts.playbackConfig = pc;
+  opts.useShakaForHls = true;           // HLS (Disney) tambien con Shaka, como hasta ahora
+  opts.disableIdleTimeout = false;
+  opts.maxInactivity = 3600;
+  opts.customNamespaces = {}; opts.customNamespaces[NS] = cast.framework.system.MessageType.JSON;
+  opts.statusText = 'Velox TV';
+
+  // ── cronometro: de "cargar" a la primera imagen, y se lo cuenta a la APK ──
+  var t0 = 0, titulo = '';
+  function avisar(o){ try { context.sendCustomMessage(NS, undefined, o); } catch (e) {} }
+  pm.setMessageInterceptor(cast.framework.messages.MessageType.LOAD, function(req){
+    t0 = Date.now();
+    try { titulo = (req.media && req.media.metadata && req.media.metadata.title) || ''; } catch (e) { titulo = ''; }
+    return req;
+  });
+  pm.addEventListener(T.PLAYER_LOAD_COMPLETE, function(){ if (t0) avisar({ t: 'cargado', ms: Date.now() - t0, titulo: titulo }); });
+  pm.addEventListener(T.PLAYING, function(){ if (t0) { avisar({ t: 'viendose', ms: Date.now() - t0, titulo: titulo }); t0 = 0; } });
+  pm.addEventListener(T.ERROR, function(e){ avisar({ t: 'error', codigo: e && e.detailedErrorCode, motivo: e && e.reason }); });
+
+  context.start(opts);
+})();
+</script>
+</body>
+</html>
