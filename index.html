@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Velox TV</title>
-<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v1.2 -->
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.1 -->
 <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
@@ -19,13 +19,26 @@
     opacity: 0; transition: opacity .4s; pointer-events: none; }
   #vx-crono.ver { opacity: 1; }
   #vx-crono small { display: block; color: #8a92a0; font-weight: 400; font-size: 15px; }
+  #vx-sig { position: fixed; right: 3vw; bottom: 9vh; z-index: 2147483646 !important; display: flex; gap: 14px; align-items: center;
+    width: 27vw; min-width: 330px; padding: 12px 16px; border-radius: 14px; background: rgba(8,10,14,.94);
+    border-left: 4px solid #00a8ff; box-shadow: 0 10px 30px rgba(0,0,0,.6); color: #fff; font-family: Roboto, sans-serif;
+    opacity: 0; transform: translateY(12px); transition: opacity .4s, transform .4s; pointer-events: none; }
+  #vx-sig.ver { opacity: 1; transform: none; }
+  #vx-sig img { width: 128px; height: 72px; object-fit: cover; border-radius: 8px; background: #1b1e26; flex-shrink: 0; }
+  #vx-sig img[src=""] { display: none; }
+  #vx-sig .q { color: #00a8ff; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  #vx-sig .n { font-size: 17px; font-weight: 700; margin-top: 4px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 18vw; }
+  #vx-sig .s { color: #aab2c0; font-size: 14px; margin-top: 2px; }
+  #vx-sig .c { color: #fff; font-size: 14px; margin-top: 6px; }
+  #vx-sig .c b { color: #00a8ff; }
 </style>
 </head>
 <body>
 <cast-media-player></cast-media-player>
 <div id="vx-crono"></div>
+<div id="vx-sig"><img src="" alt=""><div><div class="q">Siguiente capítulo</div><div class="n"></div><div class="s"></div><div class="c"></div></div></div>
 <script>
-window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v1.2 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
+window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.1 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
 (function(){
   var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
   var context = cast.framework.CastReceiverContext.getInstance();
@@ -90,11 +103,64 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
     enPantalla('⚠ Error ' + ((e && e.detailedErrorCode) || ''), 'Velox');
   });
   try {
-    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '1.2' }); }, 500); });
+    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '2.1' }); }, 500); });
   } catch (e) {}
 
+
+  // ── v2: "Siguiente capitulo" en castellano (en lugar del "Up next" de Google) ──
+  var sig = document.getElementById('vx-sig'), sigVisible = false, buscados = 0;
+  function ocultarGoogle(){   // el aviso de Google esta dentro de su reproductor: se busca y se esconde si se deja
+    var n = 0, abierto = false;
+    function mirar(raiz){
+      if (!raiz) return;
+      if (raiz !== document) {
+        abierto = true;
+        if (!raiz.querySelector('#vx-st')) {
+          var st = document.createElement('style'); st.id = 'vx-st';
+          st.textContent = '[class*="up-next" i],[class*="upnext" i],[class*="up_next" i],[id*="up-next" i],[id*="upnext" i]{display:none!important}';
+          raiz.appendChild(st);
+        }
+      }
+      var els = raiz.querySelectorAll('*');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        if (el.shadowRoot) mirar(el.shadowRoot);
+        if (el.childElementCount === 0 && /\b(up next|next video|your next|a continuaci)/i.test(el.textContent || '')) {
+          var c = el.parentElement && el.parentElement.parentElement ? el.parentElement.parentElement : (el.parentElement || el);
+          if (c.style.visibility !== 'hidden') { c.style.visibility = 'hidden'; n++; }
+        }
+      }
+    }
+    try { var p = document.querySelector('cast-media-player'); mirar(p && p.shadowRoot); } catch (e) {}
+    return { abierto: abierto, ocultos: n };
+  }
+  function pintarSiguiente(pd){
+    try {
+      var hay = !!(pd.preloadingNext && pd.nextTitle);
+      if (!hay) { if (sigVisible) { sig.classList.remove('ver'); sigVisible = false; } return; }
+      var resta = Math.max(0, Math.round((pd.duration || 0) - (pd.currentTime || 0)));
+      var sub = pd.nextSubtitle || '';
+      sig.querySelector('.q').textContent = sub ? 'Siguiente capítulo' : 'A continuación';
+      sig.querySelector('.n').textContent = pd.nextTitle || '';
+      sig.querySelector('.s').textContent = sub;
+      sig.querySelector('.c').innerHTML = resta > 0 ? 'Empieza en <b>' + resta + ' s</b>' : 'Empieza ahora';
+      var im = sig.querySelector('img'), u = pd.nextThumbnailUrl || '';
+      if (im.getAttribute('src') !== u) im.setAttribute('src', u);
+      if (!sigVisible) {
+        sig.classList.add('ver'); sigVisible = true;
+        var r = ocultarGoogle();
+        if (buscados++ < 3) avisar({ t: 'siguiente', titulo: pd.nextTitle, googleAbierto: r.abierto, googleOcultos: r.ocultos });
+      } else ocultarGoogle();
+    } catch (e) {}
+  }
+  try {
+    var pd = {}, pdb = new cast.framework.ui.PlayerDataBinder(pd);
+    pdb.addEventListener(cast.framework.ui.PlayerDataEventType.ANY_CHANGE, function(){ pintarSiguiente(pd); });
+  } catch (e) { avisar({ t: 'error', motivo: 'PlayerDataBinder: ' + e.message }); }
+  pm.addEventListener(T.LOAD_START, function(){ if (sigVisible) { sig.classList.remove('ver'); sigVisible = false; } });
+
   context.start(opts);
-  enPantalla('Velox TV', 'receptor v1.2 listo');   // al abrirse: confirma que la tele usa NUESTRO receptor
+  enPantalla('Velox TV', 'receptor v2.1 listo');   // al abrirse: confirma que la tele usa NUESTRO receptor
 })();
 </script>
 </body>
