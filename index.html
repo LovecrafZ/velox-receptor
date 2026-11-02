@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Velox TV</title>
-<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.1 -->
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.2 -->
 <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
@@ -38,7 +38,7 @@
 <div id="vx-crono"></div>
 <div id="vx-sig"><img src="" alt=""><div><div class="q">Siguiente capítulo</div><div class="n"></div><div class="s"></div><div class="c"></div></div></div>
 <script>
-window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.1 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
+window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.2 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
 (function(){
   var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
   var context = cast.framework.CastReceiverContext.getInstance();
@@ -103,7 +103,7 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
     enPantalla('⚠ Error ' + ((e && e.detailedErrorCode) || ''), 'Velox');
   });
   try {
-    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '2.1' }); }, 500); });
+    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '2.2' }); }, 500); });
   } catch (e) {}
 
 
@@ -159,8 +159,36 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
   } catch (e) { avisar({ t: 'error', motivo: 'PlayerDataBinder: ' + e.message }); }
   pm.addEventListener(T.LOAD_START, function(){ if (sigVisible) { sig.classList.remove('ver'); sigVisible = false; } });
 
+
+  // ── v2.2 (diagnostico): como esta hecho por dentro el reproductor de Google, para poder esconder su titulo grande ──
+  var volcado = false;
+  function volcar(){
+    if (volcado) return; volcado = true;
+    try {
+      var p = document.querySelector('cast-media-player'), out = [], n = 0;
+      function nombre(el){ return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\s+/).join('.') : ''); }
+      function andar(raiz, nivel, ruta){
+        var hijos = raiz.children || [];
+        for (var i = 0; i < hijos.length && n < 160; i++) {
+          var el = hijos[i], nm = nombre(el), tx = '';
+          if (!el.childElementCount) { tx = (el.textContent || '').trim().slice(0, 40); }
+          var vis = '';
+          try { var cs = getComputedStyle(el); vis = (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') ? ' (oculto)' : ''; } catch (e) {}
+          out.push(nivel + ' ' + nm + (tx ? ' "' + tx + '"' : '') + vis); n++;
+          if (el.shadowRoot) { out.push(nivel + ' [shadow de ' + nm + ']'); andar(el.shadowRoot, nivel + 1, ruta); }
+          andar(el, nivel + 1, ruta);
+        }
+      }
+      if (!p) { avisar({ t: 'dom', nota: 'no hay cast-media-player' }); return; }
+      if (!p.shadowRoot) { avisar({ t: 'dom', nota: 'shadowRoot cerrado' }); return; }
+      andar(p.shadowRoot, 0, '');
+      for (var k = 0; k < out.length; k += 25) avisar({ t: 'dom', parte: k / 25, l: out.slice(k, k + 25) });
+    } catch (e) { avisar({ t: 'dom', error: String(e) }); }
+  }
+  pm.addEventListener(T.PLAYING, function(){ setTimeout(volcar, 1200); });
+
   context.start(opts);
-  enPantalla('Velox TV', 'receptor v2.1 listo');   // al abrirse: confirma que la tele usa NUESTRO receptor
+  enPantalla('Velox TV', 'receptor v2.2 listo');   // al abrirse: confirma que la tele usa NUESTRO receptor
 })();
 </script>
 </body>
