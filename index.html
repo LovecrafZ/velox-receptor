@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Velox TV</title>
-<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v1 -->
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v1.1 -->
 <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
@@ -14,10 +14,16 @@
     --logo-image: none;
     --font-family: "Google Sans", Roboto, sans-serif;
   }
+  #vx-crono { position: fixed; top: 4vh; right: 3vw; z-index: 9999; padding: .6em 1em; border-radius: 10px;
+    background: rgba(8,10,14,.82); color: #fff; font: 600 22px/1.2 Roboto, sans-serif; border-left: 4px solid #00a8ff;
+    opacity: 0; transition: opacity .4s; pointer-events: none; }
+  #vx-crono.ver { opacity: 1; }
+  #vx-crono small { display: block; color: #8a92a0; font-weight: 400; font-size: 15px; }
 </style>
 </head>
 <body>
 <cast-media-player></cast-media-player>
+<div id="vx-crono"></div>
 <script>
 (function(){
   var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
@@ -48,17 +54,38 @@
   opts.customNamespaces = {}; opts.customNamespaces[NS] = cast.framework.system.MessageType.JSON;
   opts.statusText = 'Velox TV';
 
-  // ── cronometro: de "cargar" a la primera imagen, y se lo cuenta a la APK ──
-  var t0 = 0, titulo = '';
+  // ── cronometro: de "cargar" a la primera imagen; se ve en la tele unos segundos y se lo cuenta a la APK ──
+  var t0 = 0, titulo = '', crono = document.getElementById('vx-crono'), ocultar = null;
   function avisar(o){ try { context.sendCustomMessage(NS, undefined, o); } catch (e) {} }
-  pm.setMessageInterceptor(cast.framework.messages.MessageType.LOAD, function(req){
+  function enPantalla(txt, sub){
+    try {
+      crono.innerHTML = txt + (sub ? '<small>' + sub + '</small>' : '');
+      crono.classList.add('ver'); clearTimeout(ocultar);
+      ocultar = setTimeout(function(){ crono.classList.remove('ver'); }, 5000);
+    } catch (e) {}
+  }
+  function empieza(req){
     t0 = Date.now();
-    try { titulo = (req.media && req.media.metadata && req.media.metadata.title) || ''; } catch (e) { titulo = ''; }
-    return req;
-  });
+    try { var m = (req && (req.media || (req.items && req.items[0] && req.items[0].media))) || null; titulo = (m && m.metadata && m.metadata.title) || ''; } catch (e) { titulo = ''; }
+  }
+  pm.setMessageInterceptor(cast.framework.messages.MessageType.LOAD, function(req){ empieza(req); return req; });
+  if (cast.framework.messages.MessageType.QUEUE_LOAD)
+    pm.setMessageInterceptor(cast.framework.messages.MessageType.QUEUE_LOAD, function(req){ empieza(req); return req; });
+  pm.addEventListener(T.LOAD_START, function(){ if (!t0) t0 = Date.now(); });   // (tambien el siguiente capitulo de la cola)
   pm.addEventListener(T.PLAYER_LOAD_COMPLETE, function(){ if (t0) avisar({ t: 'cargado', ms: Date.now() - t0, titulo: titulo }); });
-  pm.addEventListener(T.PLAYING, function(){ if (t0) { avisar({ t: 'viendose', ms: Date.now() - t0, titulo: titulo }); t0 = 0; } });
-  pm.addEventListener(T.ERROR, function(e){ avisar({ t: 'error', codigo: e && e.detailedErrorCode, motivo: e && e.reason }); });
+  pm.addEventListener(T.PLAYING, function(){
+    if (!t0) return;
+    var ms = Date.now() - t0; t0 = 0;
+    avisar({ t: 'viendose', ms: ms, titulo: titulo });
+    enPantalla('▶ ' + (ms / 1000).toFixed(1).replace('.', ',') + ' s', 'Velox' + (titulo ? ' · ' + titulo : ''));
+  });
+  pm.addEventListener(T.ERROR, function(e){
+    avisar({ t: 'error', codigo: e && e.detailedErrorCode, motivo: e && e.reason });
+    enPantalla('⚠ Error ' + ((e && e.detailedErrorCode) || ''), 'Velox');
+  });
+  try {
+    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '1.1' }); }, 500); });
+  } catch (e) {}
 
   context.start(opts);
 })();
