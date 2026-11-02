@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Velox TV</title>
-<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v1.1 -->
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v1.2 -->
 <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
@@ -14,7 +14,7 @@
     --logo-image: none;
     --font-family: "Google Sans", Roboto, sans-serif;
   }
-  #vx-crono { position: fixed; top: 4vh; right: 3vw; z-index: 9999; padding: .6em 1em; border-radius: 10px;
+  #vx-crono { position: fixed; z-index: 2147483647 !important; top: 4vh; right: 3vw; z-index: 9999; padding: .6em 1em; border-radius: 10px;
     background: rgba(8,10,14,.82); color: #fff; font: 600 22px/1.2 Roboto, sans-serif; border-left: 4px solid #00a8ff;
     opacity: 0; transition: opacity .4s; pointer-events: none; }
   #vx-crono.ver { opacity: 1; }
@@ -25,6 +25,7 @@
 <cast-media-player></cast-media-player>
 <div id="vx-crono"></div>
 <script>
+window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v1.2 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
 (function(){
   var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
   var context = cast.framework.CastReceiverContext.getInstance();
@@ -72,7 +73,12 @@
   if (cast.framework.messages.MessageType.QUEUE_LOAD)
     pm.setMessageInterceptor(cast.framework.messages.MessageType.QUEUE_LOAD, function(req){ empieza(req); return req; });
   pm.addEventListener(T.LOAD_START, function(){ if (!t0) t0 = Date.now(); });   // (tambien el siguiente capitulo de la cola)
-  pm.addEventListener(T.PLAYER_LOAD_COMPLETE, function(){ if (t0) avisar({ t: 'cargado', ms: Date.now() - t0, titulo: titulo }); });
+  pm.addEventListener(T.PLAYER_LOAD_COMPLETE, function(){
+    if (!t0) return;
+    var ms = Date.now() - t0;
+    avisar({ t: 'cargado', ms: ms, titulo: titulo });
+    enPantalla('⏳ ' + (ms / 1000).toFixed(1).replace('.', ',') + ' s', 'cargado · ' + (titulo || 'Velox'));
+  });
   pm.addEventListener(T.PLAYING, function(){
     if (!t0) return;
     var ms = Date.now() - t0; t0 = 0;
@@ -84,10 +90,11 @@
     enPantalla('⚠ Error ' + ((e && e.detailedErrorCode) || ''), 'Velox');
   });
   try {
-    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '1.1' }); }, 500); });
+    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '1.2' }); }, 500); });
   } catch (e) {}
 
   context.start(opts);
+  enPantalla('Velox TV', 'receptor v1.2 listo');   // al abrirse: confirma que la tele usa NUESTRO receptor
 })();
 </script>
 </body>
