@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Velox TV</title>
-<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.4 -->
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.5 -->
 <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
@@ -19,18 +19,17 @@
     opacity: 0; transition: opacity .4s; pointer-events: none; }
   #vx-crono.ver { opacity: 1; }
   #vx-crono small { display: block; color: #8a92a0; font-weight: 400; font-size: 15px; }
-  #vx-sig { position: fixed; right: 3vw; bottom: 9vh; z-index: 2147483646 !important; display: flex; gap: 14px; align-items: center;
-    width: 27vw; min-width: 330px; padding: 12px 16px; border-radius: 14px; background: rgba(8,10,14,.94);
-    border-left: 4px solid #00a8ff; box-shadow: 0 10px 30px rgba(0,0,0,.6); color: #fff; font-family: Roboto, sans-serif;
-    opacity: 0; transform: translateY(12px); transition: opacity .4s, transform .4s; pointer-events: none; }
+  /* v2.5 · siguiente capitulo: la MISMA tarjeta y cuenta atras que el mando de la tablet (la manda la tablet) */
+  #vx-sig { position: fixed; right: 3vw; bottom: 9vh; z-index: 2147483646 !important; max-width: 460px; padding: 14px 20px; border-radius: 14px;
+    background: rgba(14,16,22,.96); border: 1px solid #00a8ff; box-shadow: 0 0 30px rgba(0,168,255,.4); color: #fff; font-family: Roboto, sans-serif;
+    opacity: 0; transform: translateY(12px); transition: opacity .35s, transform .35s; pointer-events: none; }
   #vx-sig.ver { opacity: 1; transform: none; }
-  #vx-sig img { width: 128px; height: 72px; object-fit: cover; border-radius: 8px; background: #1b1e26; flex-shrink: 0; }
-  #vx-sig img[src=""] { display: none; }
-  #vx-sig .q { color: #00a8ff; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
-  #vx-sig .n { font-size: 17px; font-weight: 700; margin-top: 4px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 18vw; }
-  #vx-sig .s { color: #aab2c0; font-size: 14px; margin-top: 2px; }
-  #vx-sig .c { color: #fff; font-size: 14px; margin-top: 6px; }
-  #vx-sig .c b { color: #00a8ff; }
+  #vx-sig .q { font-size: 15px; color: #9fb6d8; margin-bottom: 4px; }
+  #vx-sig .n { font-size: 19px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 12px; }
+  #vx-sig .bs { display: flex; gap: 12px; }
+  #vx-sig .bs div { padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 15px; background: rgba(255,255,255,.1); }
+  #vx-sig .bs div.si { background: #00a8ff; color: #001018; }
+  #vx-sig .bs b { font-size: 17px; margin-left: 6px; }
   /* v2.4 · canales: barra de zapping como en la tablet (logo, programa, horas, linea de progreso, canal) */
   #vx-zap { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2147483645; display: flex; align-items: flex-end; gap: 26px;
     padding: 70px 4vw 4.5vh; background: linear-gradient(to top, rgba(0,0,0,.9) 0%, rgba(0,0,0,.7) 55%, rgba(0,0,0,0) 100%);
@@ -47,19 +46,27 @@
   #vx-zap .bd { border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 1px 6px; font-size: 12px; color: #ccc; background: rgba(255,255,255,.08); }
   #vx-zap .si { margin-top: 8px; color: #aab0bb; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #vx-zap .vacio { display: none; }
-  /* v2.4 · peliculas y capitulos: pantalla de espera con la caratula y el titulo */
-  #vx-carga { position: fixed; inset: 0; z-index: 2147483644; display: flex; align-items: center; gap: 4.5vw; padding: 0 7vw;
-    background: #07080c; color: #fff; font-family: Roboto, sans-serif; opacity: 0; transition: opacity .5s; pointer-events: none; overflow: hidden; }
+  /* v2.5 · peliculas y capitulos: tarjeta como el marco de detalles de los canales (caratula + datos), sobre fondo oscuro */
+  #vx-carga { position: fixed; inset: 0; z-index: 2147483644; display: flex; align-items: center; justify-content: center;
+    background: #07080c; color: #fff; font-family: Roboto, sans-serif; opacity: 0; pointer-events: none; overflow: hidden; }
   #vx-carga.ver { opacity: 1; }
-  #vx-carga .fo { position: absolute; inset: -40px; background: center / cover no-repeat; filter: blur(34px) brightness(.32) saturate(1.2); }
-  #vx-carga .ca { position: relative; max-height: 54vh; max-width: 36vw; border-radius: 12px; box-shadow: 0 16px 50px rgba(0,0,0,.7); flex-shrink: 0; }
-  #vx-carga .ca[src=""] { display: none; }
-  #vx-carga .tx { position: relative; min-width: 0; }
-  #vx-carga .q { color: #00a8ff; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
-  #vx-carga .n { font-size: 36px; font-weight: 700; line-height: 1.15; margin-top: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  #vx-carga .s { color: #b8c0cc; font-size: 19px; margin-top: 10px; }
-  #vx-carga .es { display: flex; align-items: center; gap: 12px; margin-top: 28px; color: #8a92a0; font-size: 16px; }
-  #vx-carga .es i { width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(255,255,255,.18); border-top-color: #00a8ff; animation: vxgira .9s linear infinite; }
+  #vx-carga.sale { transition: opacity .5s; }
+  #vx-carga .fo { position: absolute; inset: -30px; background: center / cover no-repeat; filter: blur(8px) brightness(.3); opacity: 0; transition: opacity .6s; }
+  #vx-carga .fo.ok { opacity: 1; }
+  #vx-carga .tj { position: relative; display: flex; gap: 26px; align-items: flex-start; width: 64vw; max-width: 860px; padding: 26px 28px; border-radius: 14px;
+    background: rgba(14,16,22,.94); border: 1px solid rgba(0,168,255,.2); box-shadow: 0 8px 32px rgba(0,0,0,.6); opacity: 0; transition: opacity .25s; }
+  #vx-carga .tj.ok { opacity: 1; }
+  #vx-carga .ca { width: 170px; height: 255px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #111; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
+  #vx-carga .ca.no { display: none; }
+  #vx-carga .tx { flex: 1; min-width: 0; }
+  #vx-carga .ti { font-size: 26px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #vx-carga .ep { font-size: 18px; color: #fff; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #vx-carga .m1 { color: #00a8ff; font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  #vx-carga .m2 { color: #8a92a0; font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  #vx-carga .de { color: #d0d4dc; font-size: 15px; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  #vx-carga .vacio { display: none; }
+  #vx-carga .es { display: flex; align-items: center; gap: 12px; margin-top: 18px; color: #8a92a0; font-size: 15px; }
+  #vx-carga .es i { width: 20px; height: 20px; border-radius: 50%; border: 3px solid rgba(255,255,255,.18); border-top-color: #00a8ff; animation: vxgira .9s linear infinite; }
   @keyframes vxgira { to { transform: rotate(360deg); } }
   /* v2.4 · al pausar: titulo pequeño arriba (la barra de tiempo es la de Google) */
   #vx-pausa { position: fixed; left: 4vw; top: 5vh; z-index: 2147483643; max-width: 60vw; color: #fff; font-family: Roboto, sans-serif;
@@ -72,12 +79,12 @@
 <body>
 <cast-media-player></cast-media-player>
 <div id="vx-crono"></div>
-<div id="vx-carga"><div class="fo"></div><img class="ca" src="" alt=""><div class="tx"><div class="q">Velox TV</div><div class="n"></div><div class="s"></div><div class="es"><i></i><span>Cargando…</span></div></div></div>
+<div id="vx-carga"><div class="fo"></div><div class="tj"><img class="ca" alt=""><div class="tx"><div class="ti"></div><div class="ep"></div><div class="m1"></div><div class="m2"></div><div class="de"></div><div class="es"><i></i><span>Cargando…</span></div></div></div></div>
 <div id="vx-zap"><img class="lg" src="" alt=""><div class="cu"><div class="ti"></div><div class="fi"></div><div class="si"></div></div></div>
 <div id="vx-pausa"><div class="n"></div><div class="s"></div></div>
-<div id="vx-sig"><img src="" alt=""><div><div class="q">Siguiente capítulo</div><div class="n"></div><div class="s"></div><div class="c"></div></div></div>
+<div id="vx-sig"><div class="q"></div><div class="n"></div><div class="bs"><div class="si">▶ Ver ya<b>→</b></div><div>Cancelar<b>←</b></div></div></div>
 <script>
-window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.4 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
+window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.5 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
 (function(){
   var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
   var context = cast.framework.CastReceiverContext.getInstance();
@@ -144,7 +151,7 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
     enPantalla('⚠ Error ' + ((e && e.detailedErrorCode) || ''), 'Velox');
   });
   try {
-    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '2.4' }); }, 500); });
+    context.addEventListener(cast.framework.system.EventType.SENDER_CONNECTED, function(){ setTimeout(function(){ avisar({ t: 'hola', v: '2.5' }); }, 500); });
   } catch (e) {}
 
 
@@ -194,10 +201,7 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
       } else ocultarGoogle();
     } catch (e) {}
   }
-  try {
-    var pd = {}, pdb = new cast.framework.ui.PlayerDataBinder(pd);
-    pdb.addEventListener(cast.framework.ui.PlayerDataEventType.ANY_CHANGE, function(){ pintarSiguiente(pd); });
-  } catch (e) { avisar({ t: 'error', motivo: 'PlayerDataBinder: ' + e.message }); }
+  // (v2.5: la tarjeta ya no sigue la cuenta de Google: la manda la tablet, ver mas abajo)
   pm.addEventListener(T.LOAD_START, function(){ if (sigVisible) { sig.classList.remove('ver'); sigVisible = false; } });
 
 
@@ -237,7 +241,8 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
       var tv = r.querySelector('tv-overlay'), r2 = tv && tv.shadowRoot; if (!r2) return false;
       if (r2.querySelector('#vx-st2')) return true;
       var st = document.createElement('style'); st.id = 'vx-st2';
-      st.textContent = '.overlay .metadata{display:none!important}.nextOverlay{display:none!important}';
+      st.textContent = '.overlay .metadata{display:none!important}.nextOverlay{display:none!important}' +
+        ':host(.vx-sinbarra) .controls,:host(.vx-sinbarra) .gradient{opacity:0!important;transition:none!important}';   // v2.5: sin barra de tiempo al empezar
       r2.appendChild(st);
       avisar({ t: 'google', escondido: 'titulo y up next' });
       return true;
@@ -285,26 +290,52 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
     if (ms) tZap = setTimeout(function(){ zap.classList.remove('ver'); }, ms);
   }
   function quitarZap(){ clearTimeout(tZap); zap.classList.remove('ver'); }
-  function verCarga(){
-    carga.querySelector('.fo').style.backgroundImage = info.img ? 'url("' + info.img.replace(/"/g, '%22') + '")' : 'none';
-    carga.querySelector('.ca').setAttribute('src', info.img || '');
-    carga.querySelector('.q').textContent = info.cd.tipo === 'grab' ? 'Grabación' : (/\b(T\d|E\d|S\d|temporada|cap[ií]tulo|episodio)/i.test(info.sub) ? 'Capítulo' : 'Película');
-    carga.querySelector('.n').textContent = info.titulo || '';
-    carga.querySelector('.s').textContent = info.sub || '';
-    carga.classList.add('ver'); clearTimeout(tCarga);
+  function durTxt(s){ s = +s || 0; if (!s) return ''; var m = Math.round(s / 60); return m >= 60 ? (Math.floor(m / 60) + ' h ' + (m % 60) + ' min') : (m + ' min'); }
+  function verCarga(){   // v2.5: sale de golpe (tapa la de Google); la tarjeta, cuando llega la caratula (como mucho 0,7 s)
+    var cd = info.cd, cap = cd.cap || null;
+    var esCap = !!cap || /\b(T\d|E\d|S\d|temporada|cap[ií]tulo|episodio)/i.test(info.titulo + ' ' + info.sub);
+    var cartel = cd.cartel || info.img || '', fondo = cd.fondo || (cap && cap.img) || cartel;
+    var ti = cap ? (cd.serie || info.sub || info.titulo) : (info.titulo || '');
+    var ep = cap ? ('T' + (cap.t || '?') + ':E' + (cap.e || '?') + (cap.n ? ' · ' + cap.n : '')) : (cd.tipo === 'grab' ? (info.sub || '') : (esCap ? info.sub : ''));
+    var m1 = [cd.tipo === 'grab' ? 'Grabación' : (esCap ? 'Capítulo' : 'Película')], d = cap ? (cap.d || 0) : (cd.dur || 0);
+    if (d) m1.push(durTxt(d));
+    if (cd.tipo === 'grab' && cd.ini && cd.fin) m1.push(hora(+cd.ini) + ' – ' + hora(+cd.fin));
+    var m2 = []; if (cd.gen) m2.push(cd.gen); if (cd.nota) m2.push('★ ' + cd.nota); if (cd.anyo) m2.push(cd.anyo); if (cd.pais) m2.push(cd.pais);
+    var de = (cap && cap.s) || cd.sin || '';
+    var $ = function(s){ return carga.querySelector(s); };
+    $('.ti').textContent = ti;
+    $('.ep').textContent = ep; $('.ep').classList.toggle('vacio', !ep);
+    $('.m1').textContent = m1.join('  ·  ');
+    $('.m2').textContent = m2.join('  ·  '); $('.m2').classList.toggle('vacio', !m2.length);
+    $('.de').textContent = de; $('.de').classList.toggle('vacio', !de);
+    var tj = $('.tj'), fo = $('.fo'), ca = $('.ca'), listo = false;
+    tj.classList.remove('ok'); fo.classList.remove('ok');
+    function mostrar(){ if (listo) return; listo = true; tj.classList.add('ok'); }
+    ca.classList.toggle('no', !cartel);
+    ca.onload = mostrar; ca.onerror = function(){ ca.classList.add('no'); mostrar(); };
+    if (cartel) { if (ca.getAttribute('src') === cartel && ca.complete) mostrar(); else ca.setAttribute('src', cartel); } else mostrar();
+    setTimeout(mostrar, 700);
+    if (fondo) { var im = new Image(); im.onload = function(){ fo.style.backgroundImage = 'url("' + fondo.replace(/"/g, '%22') + '")'; fo.classList.add('ok'); }; im.src = fondo; }
+    else fo.style.backgroundImage = 'none';
+    carga.classList.remove('sale'); carga.classList.add('ver'); clearTimeout(tCarga);
     tCarga = setTimeout(quitarCarga, 30000);   // por si nunca arranca
   }
-  function quitarCarga(){ clearTimeout(tCarga); carga.classList.remove('ver'); }
+  function quitarCarga(){ clearTimeout(tCarga); carga.classList.add('sale'); carga.classList.remove('ver'); }
   function vxNuevo(m){   // llamado al llegar un LOAD (desde la tablet)
     try {
       info = datos(m);
       if (info.cd.tiempos) TIEMPOS = true;
-      pausa.classList.remove('ver'); toca = true;
+      pausa.classList.remove('ver'); toca = true; sinBarra(true);
       if (info.live) { quitarCarga(); verZap(15000); }   // sale ya al cambiar; al verse, 4 s mas
       else { quitarZap(); verCarga(); }
     } catch (e) {}
   }
+  function sinBarra(si){   // la barra de tiempo de Google: fuera al empezar; vuelve al pausar o tocar el mando
+    try { var p = document.querySelector('cast-media-player'), tv = p && p.shadowRoot && p.shadowRoot.querySelector('tv-overlay'); if (tv) tv.classList.toggle('vx-sinbarra', !!si); } catch (e) {}
+  }
+  var tBarra = null;
   function alSonar(){
+    clearTimeout(tBarra); if (toca) tBarra = setTimeout(function(){ sinBarra(false); }, 6000);
     pausa.classList.remove('ver');
     if (carga.classList.contains('ver')) quitarCarga();
     if (info && info.live && toca) verZap(4000);
@@ -316,7 +347,7 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
   pm.addEventListener(T.PAUSE, function(){
     try {
       if (!info) info = datos(pm.getMediaInformation());
-      toca = true;
+      toca = true; clearTimeout(tBarra); sinBarra(false);
       if (info.live) { verZap(0); return; }   // canal en pausa: la barra se queda hasta que siga
       var mi = pm.getMediaInformation(), d = mi ? datos(mi) : info;   // (con la cola, el capitulo que suena)
       pausa.querySelector('.n').textContent = d.titulo || '';
@@ -328,8 +359,54 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
     try { var mi = pm.getMediaInformation(); if (mi) info = datos(mi); } catch (e) {}
   });
 
+  // ── v2.5: tarjeta "Siguiente capitulo" que manda la tablet (misma cuenta atras que el mando) ──
+  //   → (flecha derecha) = ver ya · ← = cancelar. Cada tecla que llega se apunta en el log de la tablet.
+  function verSig(o){
+    sig.querySelector('.q').textContent = 'Siguiente capítulo · empieza en ' + o.n + ' s';
+    sig.querySelector('.n').textContent = o.titulo || '';
+    if (!sigVisible) { sig.classList.add('ver'); sigVisible = true; }
+  }
+  function quitarSig(){ if (sigVisible) { sig.classList.remove('ver'); sigVisible = false; } }
+  try {
+    context.addCustomMessageListener(NS, function(ev){
+      try {
+        var o = ev && ev.data; if (typeof o === 'string') o = JSON.parse(o);
+        if (!o) return;
+        if (o.t === 'sig') verSig(o);
+        else if (o.t === 'sigFuera') quitarSig();
+      } catch (e) {}
+    });
+  } catch (e) { avisar({ t: 'error', motivo: 'mensajes: ' + e.message }); }
+  var teclas = 0;
+  function tecla(e){
+    try {
+      var k = e.key || '', c = e.keyCode || 0;
+      if (teclas++ < 60) avisar({ t: 'tecla', k: k, c: c, tarjeta: sigVisible });
+      if (!sigVisible) { sinBarra(false); return; }
+      if (k === 'ArrowRight' || c === 39 || c === 22 || k === 'MediaFastForward' || c === 228) { avisar({ t: 'ya' }); quitarSig(); e.preventDefault(); e.stopPropagation(); }
+      else if (k === 'ArrowLeft' || c === 37 || c === 21 || k === 'MediaRewind' || c === 227) { avisar({ t: 'no' }); quitarSig(); e.preventDefault(); e.stopPropagation(); }
+    } catch (x) {}
+  }
+  window.addEventListener('keydown', tecla, true);
+  // plan B: si Google se queda la flecha y la convierte en "avanzar", con la tarjeta puesta se usa como ver ya / cancelar
+  pm.setMessageInterceptor(cast.framework.messages.MessageType.SEEK, function(req){
+    try {
+      var de = '', s = context.getSenders ? context.getSenders() : [];
+      for (var i = 0; i < s.length; i++) de += s[i].id + ',';
+      var mando = !req.senderId || de.indexOf(req.senderId + ',') < 0;   // no viene de la tablet: es el mando de la tele
+      avisar({ t: 'tecla', seek: true, rel: req.relativeTime, a: req.currentTime, de: req.senderId || '', mando: mando, tarjeta: sigVisible });
+      sinBarra(false);
+      if (sigVisible && mando) {
+        var adelante = (req.relativeTime != null) ? req.relativeTime > 0 : (req.currentTime || 0) > (pm.getCurrentTimeSec() || 0);
+        avisar({ t: adelante ? 'ya' : 'no' }); quitarSig();
+        return null;
+      }
+    } catch (e) {}
+    return req;
+  });
+
   context.start(opts);
-  if (TIEMPOS) enPantalla('Velox TV', 'receptor v2.4 listo');   // al abrirse (solo con los tiempos en pantalla)
+  if (TIEMPOS) enPantalla('Velox TV', 'receptor v2.5 listo');   // al abrirse (solo con los tiempos en pantalla)
 })();
 </script>
 </body>
