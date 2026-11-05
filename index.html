@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Velox TV</title>
-<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.8 -->
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.11 -->
 <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
@@ -72,7 +72,8 @@
   #vx-carga .m2 { color: #8a92a0; font-size: 15px; font-weight: 600; margin-bottom: 12px; }
   #vx-carga .de { color: #d0d4dc; font-size: 15px; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
   #vx-carga .vacio { display: none; }
-  #vx-carga .es { display: flex; align-items: center; gap: 12px; margin-top: 18px; color: #8a92a0; font-size: 15px; }
+  #vx-carga .es { display: none !important; }   /* v2.9: sin circulito ni 'Cargando…' (Candi: poco pro); queda la caratula */
+  #vx-carga .es0 { display: flex; align-items: center; gap: 12px; margin-top: 18px; color: #8a92a0; font-size: 15px; }
   #vx-carga .es i { width: 20px; height: 20px; border-radius: 50%; border: 3px solid rgba(255,255,255,.18); border-top-color: #00a8ff; animation: vxgira .9s linear infinite; }
   @keyframes vxgira { to { transform: rotate(360deg); } }
   /* v2.4 · al pausar: titulo pequeño arriba (la barra de tiempo es la de Google) */
@@ -91,9 +92,9 @@
 <div id="vx-pausa"><div class="n"></div><div class="s"></div></div>
 <div id="vx-sig"><img class="im no" alt=""><div class="tx"><div class="q"></div><div class="ti"></div><div class="m2 vacio"></div><div class="de vacio"></div><div class="bs"><div class="si">▶ Ver ya<b>OK</b></div></div></div></div>
 <script>
-window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.8 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
+window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.11 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
 (function(){
-  var VERSION = '2.8';
+  var VERSION = '2.11';
   var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
   var context = cast.framework.CastReceiverContext.getInstance();
   var pm = context.getPlayerManager();
@@ -315,6 +316,20 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
   // v2.7 · acabo y no viene nada mas (pelicula, ultimo capitulo, "Ver créditos" del ultimo): el receptor se cierra solo y la
   //   tablet le dice a la APK de la tele que vuelva a Velox. Si la tablet avisa {t:'espera'} (va a mandar el siguiente), se espera.
   var tFin = null, otro = false;
+  // v2.11 · cronometro del paso al siguiente capitulo de la cola (cuanto tarda la tele y en que se le va el tiempo)
+  var tPaso = 0, pasoEstados = [];
+  ['PLAYER_LOAD_COMPLETE', 'BUFFERING', 'PLAYING', 'SEEKED', 'ERROR'].forEach(function(n){
+    try { if (T[n]) pm.addEventListener(T[n], function(ev){
+      if (!tPaso) return;
+      var ms = Date.now() - tPaso;
+      pasoEstados.push(n + (n === 'BUFFERING' && ev && ev.isBuffering === false ? '-fin' : '') + '@' + ms);
+      if (n === 'PLAYING' || n === 'ERROR') {
+        var v = null; try { var p = document.querySelector('cast-media-player'); v = p && p.shadowRoot && p.shadowRoot.querySelector('video'); } catch (x) {}
+        avisar({ t: 'paso', ms: ms, pasos: pasoEstados.join(' '), video: v ? (v.videoWidth + 'x' + v.videoHeight) : '' });
+        tPaso = 0;
+      }
+    }); } catch (x) {}
+  });
   function finSinMas(ms){
     clearTimeout(tFin); otro = false;
     tFin = setTimeout(function(){
@@ -339,6 +354,8 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
   });
   pm.addEventListener(T.LOAD_START, function(){   // siguiente capitulo de la cola: los datos del nuevo, sin pantallas (paso directo)
     quitarSig();
+    tPaso = Date.now(); pasoEstados = [];   // v2.11: cronometro del paso al siguiente de la cola
+    toca = true; sinBarra(true);   // v2.10: al pasar al siguiente (Ver ya / OK / fin de la cuenta) Google sacaba su barra de tiempo: fuera, como al empezar
     try { var mi = pm.getMediaInformation(); if (mi) { info = datos(mi); delete enCola[cid(mi)]; } } catch (e) {}
   });
 
@@ -393,6 +410,12 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
     } catch (x) {}
   }
   window.addEventListener('keydown', tecla, true);
+  // v2.9 · diagnostico del OK del mando (abria el timeshift): que llega a la pagina y que le llega al reproductor
+  var teclasUp = 0;
+  window.addEventListener('keyup', function(e){ try { if (teclasUp++ < 40) avisar({ t: 'tecla', arriba: true, k: e.key || '', c: e.keyCode || 0, tarjeta: sigVisible }); } catch (x) {} }, true);
+  ['REQUEST_PAUSE', 'REQUEST_PLAY', 'REQUEST_SEEK', 'REQUEST_STOP', 'REQUEST_PRECACHE', 'REQUEST_FOCUS_STATE', 'REQUEST_USER_ACTION', 'REQUEST_DISPLAY_STATUS'].forEach(function(n){
+    try { if (T[n]) pm.addEventListener(T[n], function(ev){ avisar({ t: 'evento', e: n, de: (ev && ev.senderId) || '', tarjeta: sigVisible }); }); } catch (x) {}
+  });
   function delMando(req){   // la orden no viene de la tablet (es el mando de la tele)
     var de = '', s = context.getSenders ? context.getSenders() : [];
     for (var i = 0; i < s.length; i++) de += s[i].id + ',';
