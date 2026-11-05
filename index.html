@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Velox TV</title>
-<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.7 -->
+<!-- Velox TV · receptor Cast propio (CAF + Shaka) · v2.8 -->
 <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
@@ -27,6 +27,7 @@
   #vx-sig.ver { opacity: 1; transform: none; }
   #vx-sig .im { width: 224px; height: 126px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #111; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
   #vx-sig .im.no { display: none; }
+  #vx-sig .im.no[src] { display: block; }   /* v2.8: pidiendose, el hueco ya esta (el texto no se mueve) */
   #vx-sig .tx { flex: 1; min-width: 0; }
   #vx-sig .q { color: #00a8ff; font-size: 15px; font-weight: 600; margin-bottom: 6px; }
   #vx-sig .ti { font-size: 20px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -90,9 +91,9 @@
 <div id="vx-pausa"><div class="n"></div><div class="s"></div></div>
 <div id="vx-sig"><img class="im no" alt=""><div class="tx"><div class="q"></div><div class="ti"></div><div class="m2 vacio"></div><div class="de vacio"></div><div class="bs"><div class="si">▶ Ver ya<b>OK</b></div></div></div></div>
 <script>
-window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.7 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
+window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-crono'); c.innerHTML = '⚠ ' + m + '<small>Velox v2.8 · línea ' + l + '</small>'; c.classList.add('ver'); } catch (e) {} };
 (function(){
-  var VERSION = '2.7';
+  var VERSION = '2.8';
   var NS = 'urn:x-cast:tv.velox';                       // mensajes con la APK (tiempos, avisos)
   var context = cast.framework.CastReceiverContext.getInstance();
   var pm = context.getPlayerManager();
@@ -344,7 +345,7 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
   // ── tarjeta "Siguiente capitulo" que manda la tablet (misma cuenta atras que el mando) ──
   //   v2.6: con nuestra estetica (miniatura, T·E · nombre, duracion, 2 lineas de sinopsis) · OK (o →) = ver ya · sin "Cancelar"
   //   v2.7: ATRAS con la tarjeta = Ver créditos (la tablet deja este capitulo hasta el final y luego el siguiente)
-  var sig = document.getElementById('vx-sig'), sigVisible = false;
+  var sig = document.getElementById('vx-sig'), sigVisible = false; var sigMalas = {};
   function verSig(o){
     var $ = function(s){ return sig.querySelector(s); };
     $('.q').textContent = 'Siguiente capítulo · empieza en ' + o.n + ' s';
@@ -356,8 +357,9 @@ window.onerror = function(m, f, l){ try { var c = document.getElementById('vx-cr
     if ($('.de').textContent !== de) $('.de').textContent = de;
     $('.de').classList.toggle('vacio', !de);
     var im = $('.im'), u = o.img || '';
+    if (u && sigMalas[u]) u = '';   // v2.8: miniatura que fallo: no se reintenta cada segundo
     if (u) {
-      if (im.getAttribute('src') !== u) { im.classList.add('no'); im.onload = function(){ im.classList.remove('no'); }; im.onerror = function(){ im.classList.add('no'); }; im.setAttribute('src', u); }
+      if (im.getAttribute('src') !== u) { im.classList.add('no'); im.onload = function(){ im.classList.remove('no'); }; im.onerror = function(){ sigMalas[u] = 1; im.classList.add('no'); im.removeAttribute('src'); }; im.setAttribute('src', u); }
     } else { im.classList.add('no'); im.removeAttribute('src'); }
     if (!sigVisible) { sig.classList.add('ver'); sigVisible = true; }
   }
